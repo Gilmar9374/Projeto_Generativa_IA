@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academia Brother Gil - Personal Trainer</title>
+  <!-- Biblioteca para renderizar Markdown nas respostas -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode">
+
+  <div class="chat-container">
+    <!-- Cabeçalho do Chat -->
+    <header class="chat-header">
+      <div class="header-left">
+        <div class="avatar">G</div>
+        <div class="header-info">
+          <h2>Academia Brother Gil</h2>
+          <h3>Personal Trainer</h3>
+          <div class="status">
+            <span class="status-dot"></span>
+            <span>Online | Atendimento em Carapicuíba - SP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Contador de Mensagens -->
+        <span id="msg-counter" class="msg-counter">Mensagens: 0</span>
+        <!-- Botão Limpar Conversa -->
+        <button id="clear-btn" class="icon-btn" title="Limpar Conversa">🗑️</button>
+        <!-- Botão Alternar Tema (Claro / Escuro) -->
+        <button id="theme-btn" class="icon-btn" title="Alternar Tema">🌙</button>
+      </div>
+    </header>
+
+    <!-- Área de Mensagens -->
+    <div id="chat-messages" class="chat-messages">
+      <!-- Indicador de Carregamento -->
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>Aguarde...</span>
+      </div>
+    </div>
+
+    <!-- Campo de Envio (Enviar com Enter) -->
+    <form id="chat-form" class="chat-input-area">
+      <input type="text" id="user-input" placeholder="Pergunte sobre treinos ou academias em Carapicuíba..." autocomplete="off" required>
+      <button type="submit">Enviar</button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

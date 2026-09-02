@@ -1,0 +1,15 @@
+{
+  "name": "fitbot-assistant",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "Back-end/server.js",
+  "scripts": {
+    "start": "node Back-end/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "openai": "^4.56.0"
+  }
+}
