@@ -1,4 +1,5 @@
-# 🏋️  Academia Brother Gil - Personal Trainer Virtual
+# Academia Brother Gil - Personal Trainer Virtual 
+>>>>>>> 6e2934a851b4c7f7629561ad346dc217a37cd6be
 
 Aplicação Web de Chat com IA para tirar dúvidas sobre treinos, nutrição esportiva e recomendar academias na cidade de Carapicuíba - SP.
 
