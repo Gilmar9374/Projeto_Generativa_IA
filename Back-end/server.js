@@ -239,22 +239,16 @@ IMAGENS:
                 "gpt-5.6-luna";
 
 
-            const completion =
-                await openai.chat.completions.create({
+            const completion = await openai.responses.create({
 
-                    model,
+                model,
+                input: fullConversation,
+                instructions: "VOCÊ SÓ PODE FALAR DE FUTEBOL E NADA MAIS"
 
-                    messages:
-                        fullConversation
-
-                });
+            });
 
 
-            const aiResponse =
-                completion
-                    ?.choices?.[0]
-                    ?.message
-                    ?.content;
+            const aiResponse = completion.output_text;
 
 
             if (!aiResponse) {
