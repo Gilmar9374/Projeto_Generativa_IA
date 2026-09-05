@@ -1,4 +1,4 @@
-# 🏋️ FitBot - Personal Trainer Virtual (Carapicuíba - SP)
+# 🏋️ Academia Brother Gil - Personal Trainer Virtual (Carapicuíba - SP)
 
 Aplicação Web de Chat com IA para tirar dúvidas sobre treinos, nutrição esportiva e recomendar academias na cidade de Carapicuíba - SP.
 
