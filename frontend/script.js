@@ -81,8 +81,6 @@ function adicionarMensagemInicial() {
 
     messages.push(mensagemInicial);
 
-    salvarHistorico();
-
     renderizarHistorico();
 
 }
@@ -127,8 +125,6 @@ async function enviarMensagem() {
 
     mensagemInput.value = "";
 
-
-    salvarHistorico();
 
     renderizarHistorico();
 
@@ -240,8 +236,6 @@ async function enviarMensagem() {
         });
 
 
-        salvarHistorico();
-
         renderizarHistorico();
 
     }
@@ -317,7 +311,7 @@ botaoNovaConversa.addEventListener(
 
         messages = [];
 
-        salvarHistorico();
+        localStorage.removeItem(STORAGE_KEY);
 
         adicionarMensagemInicial();
 
@@ -620,76 +614,13 @@ function adicionarMensagemErro(
 // LOCAL STORAGE
 // ==========================================
 
-function salvarHistorico() {
-
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(messages)
-    );
-
-}
-
-
 function carregarHistorico() {
 
-    try {
+    // Remove qualquer histórico do navegador ao recarregar a página
+    localStorage.removeItem(STORAGE_KEY);
 
-        const historico =
-            localStorage.getItem(
-                STORAGE_KEY
-            );
-
-
-        if (!historico) {
-
-            messages = [];
-
-            return;
-
-        }
-
-
-        const dados =
-            JSON.parse(historico);
-
-
-        if (!Array.isArray(dados)) {
-
-            messages = [];
-
-            return;
-
-        }
-
-
-        /*
-         * Aceita somente mensagens
-         * com roles válidas.
-         */
-
-        messages =
-            dados.filter(
-                mensagem =>
-                    mensagem &&
-                    (
-                        mensagem.role === "user" ||
-                        mensagem.role === "assistant"
-                    ) &&
-                    typeof mensagem.content === "string"
-            );
-
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao carregar histórico:",
-            erro
-        );
-
-        messages = [];
-
-    }
+    // Inicia o array zerado
+    messages = [];
 
 }
 
