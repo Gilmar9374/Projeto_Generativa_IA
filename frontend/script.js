@@ -1,147 +1,736 @@
-const chatMessages = document.getElementById('chat-messages');
-const chatForm = document.getElementById('chat-form');
-const userInput = document.getElementById('user-input');
-const loadingElement = document.getElementById('loading');
-const themeBtn = document.getElementById('theme-btn');
-const clearBtn = document.getElementById('clear-btn');
-const msgCounter = document.getElementById('msg-counter');
+const mensagensContainer =
+    document.getElementById("mensagens");
 
-// Substitua as variáveis de histórico por:
-let conversationHistory = [];
-let totalMessages = 0;
+const mensagemInput =
+    document.getElementById("mensagemInput");
 
+const botaoEnviar =
+    document.getElementById("enviar");
+
+const botaoNovaConversa =
+    document.getElementById("novaConversa");
+
+const formulario =
+    document.getElementById("formulario");
+
+const botaoTema =
+    document.getElementById("tema");
+
+const contador =
+    document.getElementById("contador");
+
+
+// ==========================================
+// CONFIGURAÇÕES
+// ==========================================
+
+const STORAGE_KEY = "academia_brother_gil_history";
+const THEME_KEY = "academia_brother_gil_theme";
+
+
+// Histórico enviado para a IA
+
+let messages = [];
+
+
+// ==========================================
 // INICIALIZAÇÃO
-document.addEventListener('DOMContentLoaded', () => {
-  renderHistory();
-  updateCounter();
-  
-  // Mensagem inicial se o histórico estiver vazio
- // Mensagem inicial se o histórico estiver vazio
-if (conversationHistory.length === 0) {
-  const defaultMsg = {
-    role: 'assistant',
-    content: `Bora treinar! 
-    
-    Eu sou o Gilmar da Academia Brother Gil. 
-    Como posso te ajudar com treinos ou academias em Carapicuíba - SP?`,
-    time: getCurrentTime()
-  };
-    conversationHistory.push(defaultMsg);
-    saveToLocalStorage();
-    renderHistory();
-  }
+// ==========================================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    carregarTema();
+
+    carregarHistorico();
+
+    atualizarContador();
+
+    if (messages.length === 0) {
+
+        adicionarMensagemInicial();
+
+    } else {
+
+        renderizarHistorico();
+
+    }
+
+    mensagemInput.focus();
+
 });
 
-// SUBMIT / ENVIAR MENSAGEM (Com Enter ou clique)
-chatForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const messageText = userInput.value.trim();
-  if (!messageText) return;
 
-  const userMsg = { role: 'user', content: messageText, time: getCurrentTime() };
-  conversationHistory.push(userMsg);
-  totalMessages++;
-  
-  userInput.value = '';
-  saveToLocalStorage();
-  renderHistory();
+// ==========================================
+// MENSAGEM INICIAL
+// ==========================================
 
-  loadingElement.classList.remove('hidden');
-  scrollToBottom();
+function adicionarMensagemInicial() {
 
-  try {
-    const apiPayload = conversationHistory.map(m => ({ role: m.role, content: m.content }));
-    const response = await fetch('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: apiPayload })
+    const mensagemInicial = {
+
+        role: "assistant",
+
+        content:
+            "Olá! 👋 Sou o Gilmar, seu personal trainer virtual.\n\n" +
+            "Posso ajudar com **treinos, exercícios, execução de movimentos, " +
+            "equipamentos, nutrição esportiva** e informações sobre academias " +
+            "em **Carapicuíba - SP**.\n\n" +
+            "Como posso ajudar você hoje? 🏋️"
+
+    };
+
+    messages.push(mensagemInicial);
+
+    salvarHistorico();
+
+    renderizarHistorico();
+
+}
+
+
+// ==========================================
+// ENVIAR MENSAGEM
+// ==========================================
+
+async function enviarMensagem() {
+
+    const texto =
+        mensagemInput.value.trim();
+
+
+    if (!texto) {
+
+        return;
+
+    }
+
+
+    if (botaoEnviar.disabled) {
+
+        return;
+
+    }
+
+
+    // Adiciona usuário ao histórico
+
+    messages.push({
+
+        role: "user",
+
+        content: texto
+
     });
 
-    const data = await response.json();
-    const botText = data.response || 'Não consegui obter uma resposta.';
 
-    const botMsg = { role: 'assistant', content: botText, time: getCurrentTime() };
-    conversationHistory.push(botMsg);
-    totalMessages++;
+    // Limpa campo
 
-    saveToLocalStorage();
-    renderHistory();
-  } catch (error) {
-    console.error(error);
-  } finally {
-    loadingElement.classList.add('hidden');
-    scrollToBottom();
-  }
-});
+    mensagemInput.value = "";
 
-// RENDERIZAR MENSAGENS E MARKDOWN
-function renderHistory() {
-  chatMessages.querySelectorAll('.message').forEach(el => el.remove());
 
-  conversationHistory.forEach((msg) => {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', msg.role);
+    salvarHistorico();
 
-    // Suporte a Markdown para o assistente
-    const parsedContent = msg.role === 'assistant' ? marked.parse(msg.content) : msg.content;
+    renderizarHistorico();
 
-    messageDiv.innerHTML = `
-      <div class="msg-content">${parsedContent}</div>
-      <div class="msg-footer">
-        <span>${msg.time || ''}</span>
-        ${msg.role === 'assistant' ? `<button class="copy-btn" onclick="copyText(\`${escapeQuotes(msg.content)}\`)">Copiar</button>` : ''}
-      </div>
+
+    // Desativa botão
+
+    botaoEnviar.disabled = true;
+
+
+    // Mostra loading
+
+    mostrarLoading();
+
+
+    try {
+
+        /*
+         * O backend espera:
+         *
+         * {
+         *   messages: [
+         *      { role: "user", content: "..." },
+         *      { role: "assistant", content: "..." }
+         *   ]
+         * }
+         */
+
+        const resposta =
+            await fetch("/chat", {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body: JSON.stringify({
+
+                    messages: messages.map(
+                        mensagem => ({
+
+                            role: mensagem.role,
+
+                            content: mensagem.content
+
+                        })
+                    )
+
+                })
+
+            });
+
+
+        let dados;
+
+        try {
+
+            dados = await resposta.json();
+
+        } catch {
+
+            throw new Error(
+                "O servidor retornou uma resposta inválida."
+            );
+
+        }
+
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                dados.error ||
+                dados.response ||
+                "Erro na comunicação com o servidor."
+            );
+
+        }
+
+
+        const respostaIA =
+            dados.response;
+
+
+        if (!respostaIA) {
+
+            throw new Error(
+                "O servidor não retornou uma resposta da IA."
+            );
+
+        }
+
+
+        // Remove loading
+
+        removerLoading();
+
+
+        // Adiciona resposta da IA
+
+        messages.push({
+
+            role: "assistant",
+
+            content: respostaIA
+
+        });
+
+
+        salvarHistorico();
+
+        renderizarHistorico();
+
+    }
+
+
+    catch (erro) {
+
+        console.error(
+            "Erro ao enviar mensagem:",
+            erro
+        );
+
+
+        removerLoading();
+
+
+        adicionarMensagemErro(
+            "⚠️ Não foi possível conectar ao assistente. " +
+            "Verifique se o servidor está funcionando e tente novamente."
+        );
+
+    }
+
+
+    finally {
+
+        botaoEnviar.disabled = false;
+
+        mensagemInput.focus();
+
+    }
+
+}
+
+
+// ==========================================
+// FORMULÁRIO
+// ==========================================
+
+formulario.addEventListener(
+    "submit",
+    event => {
+
+        event.preventDefault();
+
+        enviarMensagem();
+
+    }
+);
+
+
+// ==========================================
+// NOVA CONVERSA
+// ==========================================
+
+botaoNovaConversa.addEventListener(
+    "click",
+    () => {
+
+        const confirmar =
+            confirm(
+                "Deseja iniciar uma nova conversa? " +
+                "O histórico atual será apagado."
+            );
+
+
+        if (!confirmar) {
+
+            return;
+
+        }
+
+
+        messages = [];
+
+        salvarHistorico();
+
+        adicionarMensagemInicial();
+
+        mensagemInput.focus();
+
+    }
+);
+
+
+// ==========================================
+// TEMA
+// ==========================================
+
+botaoTema.addEventListener(
+    "click",
+    () => {
+
+        const modoClaro =
+            document.body.classList.toggle(
+                "light-mode"
+            );
+
+
+        if (modoClaro) {
+
+            localStorage.setItem(
+                THEME_KEY,
+                "light"
+            );
+
+            botaoTema.textContent = "☀️";
+
+        } else {
+
+            localStorage.setItem(
+                THEME_KEY,
+                "dark"
+            );
+
+            botaoTema.textContent = "🌙";
+
+        }
+
+    }
+);
+
+
+function carregarTema() {
+
+    const tema =
+        localStorage.getItem(THEME_KEY);
+
+
+    if (tema === "light") {
+
+        document.body.classList.add(
+            "light-mode"
+        );
+
+        botaoTema.textContent = "☀️";
+
+    } else {
+
+        document.body.classList.remove(
+            "light-mode"
+        );
+
+        botaoTema.textContent = "🌙";
+
+    }
+
+}
+
+
+// ==========================================
+// RENDERIZAR HISTÓRICO
+// ==========================================
+
+function renderizarHistorico() {
+
+    mensagensContainer.innerHTML = "";
+
+
+    messages.forEach(
+        mensagem => {
+
+            adicionarMensagemNaTela(
+                mensagem.content,
+                mensagem.role
+            );
+
+        }
+    );
+
+
+    atualizarContador();
+
+}
+
+
+// ==========================================
+// ADICIONAR MENSAGEM NA TELA
+// ==========================================
+
+function adicionarMensagemNaTela(
+    texto,
+    role
+) {
+
+    const mensagem =
+        document.createElement("div");
+
+
+    mensagem.classList.add(
+        "mensagem",
+        role === "user"
+            ? "usuario"
+            : "ia"
+    );
+
+
+    const avatar =
+        document.createElement("div");
+
+
+    avatar.classList.add(
+        "avatar"
+    );
+
+
+    avatar.textContent =
+        role === "user"
+            ? "👤"
+            : "🤖";
+
+
+    const conteudo =
+        document.createElement("div");
+
+
+    conteudo.classList.add(
+        "conteudo"
+    );
+
+
+    if (
+        role === "assistant" &&
+        typeof marked !== "undefined"
+    ) {
+
+        conteudo.innerHTML =
+            marked.parse(texto);
+
+    } else {
+
+        // textContent evita HTML enviado pelo usuário
+
+        conteudo.textContent =
+            texto;
+
+    }
+
+
+    mensagem.appendChild(avatar);
+
+    mensagem.appendChild(conteudo);
+
+    mensagensContainer.appendChild(
+        mensagem
+    );
+
+
+    scrollParaFinal();
+
+}
+
+
+// ==========================================
+// LOADING
+// ==========================================
+
+function mostrarLoading() {
+
+    removerLoading();
+
+
+    const mensagem =
+        document.createElement("div");
+
+
+    mensagem.id = "loading";
+
+    mensagem.classList.add(
+        "mensagem",
+        "ia",
+        "loading"
+    );
+
+
+    const avatar =
+        document.createElement("div");
+
+
+    avatar.classList.add(
+        "avatar"
+    );
+
+
+    avatar.textContent =
+        "🤖";
+
+
+    const conteudo =
+        document.createElement("div");
+
+
+    conteudo.classList.add(
+        "conteudo"
+    );
+
+
+    conteudo.innerHTML = `
+        <span>Gilmar está pensando</span>
+
+        <span class="dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
     `;
 
-    chatMessages.insertBefore(messageDiv, loadingElement);
-  });
 
-  updateCounter();
-  scrollToBottom();
+    mensagem.appendChild(avatar);
+
+    mensagem.appendChild(conteudo);
+
+
+    mensagensContainer.appendChild(
+        mensagem
+    );
+
+
+    scrollParaFinal();
+
 }
 
-// MODO CLARO / ESCURO
-themeBtn.addEventListener('click', () => {
-  document.body.classList.toggle('light-mode');
-  const isLight = document.body.classList.contains('light-mode');
-  themeBtn.innerText = isLight ? '☀️' : '🌙';
-});
 
-// LIMPAR CONVERSA
-clearBtn.addEventListener('click', () => {
-  if (confirm('Deseja limpar todo o histórico de conversa?')) {
-    conversationHistory = [];
-    totalMessages = 0;
-    localStorage.removeItem('chat_history');
-    localStorage.removeItem('msg_count');
-    location.reload();
-  }
-});
+// ==========================================
+// REMOVER LOADING
+// ==========================================
 
-// BÔNUS & UTILITÁRIOS
-function getCurrentTime() {
-  const now = new Date();
-  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function removerLoading() {
+
+    const loading =
+        document.getElementById(
+            "loading"
+        );
+
+
+    if (loading) {
+
+        loading.remove();
+
+    }
+
 }
 
-function updateCounter() {
-  msgCounter.innerText = `Mensagens: ${totalMessages}`;
+
+// ==========================================
+// ERRO
+// ==========================================
+
+function adicionarMensagemErro(
+    texto
+) {
+
+    const mensagemErro = {
+
+        role: "assistant",
+
+        content: texto
+
+    };
+
+
+    /*
+     * Não adicionamos o erro ao histórico
+     * enviado para a IA.
+     */
+
+    adicionarMensagemNaTela(
+        mensagemErro.content,
+        mensagemErro.role
+    );
+
 }
 
-function saveToLocalStorage() {
-  localStorage.setItem('chat_history', JSON.stringify(conversationHistory));
-  localStorage.setItem('msg_count', totalMessages.toString());
+
+// ==========================================
+// LOCAL STORAGE
+// ==========================================
+
+function salvarHistorico() {
+
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(messages)
+    );
+
 }
 
-function scrollToBottom() {
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+function carregarHistorico() {
+
+    try {
+
+        const historico =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
+
+
+        if (!historico) {
+
+            messages = [];
+
+            return;
+
+        }
+
+
+        const dados =
+            JSON.parse(historico);
+
+
+        if (!Array.isArray(dados)) {
+
+            messages = [];
+
+            return;
+
+        }
+
+
+        /*
+         * Aceita somente mensagens
+         * com roles válidas.
+         */
+
+        messages =
+            dados.filter(
+                mensagem =>
+                    mensagem &&
+                    (
+                        mensagem.role === "user" ||
+                        mensagem.role === "assistant"
+                    ) &&
+                    typeof mensagem.content === "string"
+            );
+
+    }
+
+    catch (erro) {
+
+        console.error(
+            "Erro ao carregar histórico:",
+            erro
+        );
+
+        messages = [];
+
+    }
+
 }
 
-function copyText(text) {
-  navigator.clipboard.writeText(text);
-  alert('Mensagem copiada para a área de transferência!');
+
+// ==========================================
+// CONTADOR
+// ==========================================
+
+function atualizarContador() {
+
+    /*
+     * Conta somente mensagens enviadas
+     * pelo usuário.
+     */
+
+    const quantidade =
+        messages.filter(
+            mensagem =>
+                mensagem.role === "user"
+        ).length;
+
+
+    contador.textContent =
+        `Mensagens: ${quantidade}`;
+
 }
 
-function escapeQuotes(str) {
-  return str.replace(/`/g, '\\`').replace(/"/g, '&quot;');
+
+// ==========================================
+// SCROLL
+// ==========================================
+
+function scrollParaFinal() {
+
+    requestAnimationFrame(
+        () => {
+
+            mensagensContainer.scrollTop =
+                mensagensContainer.scrollHeight;
+
+        }
+    );
+
 }
